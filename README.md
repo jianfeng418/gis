@@ -3,3 +3,5 @@
 ### 支持发光点特效
 ### 迁移特效
 ### ehart数据表格显示
+
+#### 预览地址：https://jianfeng418.github.io/gis/index.html
