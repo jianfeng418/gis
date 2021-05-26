@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta charset='UTF-8'/>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no'/>
+    <link href='./bigemap.css' rel='stylesheet'/>
+    <script src='./bigemap.js'></script>
+    <script src='./440000.json'></script>
+    <script src="./echarts.js"></script>
+    <script src="./superMap.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+        .pulse-icon {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 100%;
+            background-color: #2f8;
+            position: relative;
+            //margin-left: -5px;
+           box-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.75);
+           // background-image: url('./cabin.png');
+        }
+
+        .pulse-icon:after {
+            content: "";
+            box-shadow: 0 0 6px 2px #2f8;
+            animation: pulsate 1s ease-out;
+            animation-iteration-count: infinite;
+            animation-delay: 1.1s;
+            -webkit-border-radius: 100%;
+            border-radius: 100%;
+            height: 300%;
+            width: 300%;
+            animation: pulsate 2s infinite;
+            position: absolute;
+            margin: -100% 0 0 -100%;
+        }
+
+        @keyframes pulsate {
+            0% {
+                transform: scale(0.1, 0.1);
+                opacity: 0;
+                -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+                filter: alpha(opacity=0);
+            }
+            50% {
+                opacity: 1;
+                -ms-filter: none;
+                filter: none;
+            }
+            100% {
+                transform: scale(1.2, 1.2);
+                opacity: 0;
+                -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+                filter: alpha(opacity=0);
+            }
+        }
+
+        .controlDiv{
+            position: absolute;
+            z-index: 99;
+        }
+    </style>
+    <title>bigmap</title>
+</head>
+<body>
+<div id='mapDiv'>
+        <div class='controlDiv'>
+            <button onclick='toggleName()'>切换地名</button>
+        </div>
+        <div id='map'></div>
+         <div id="table">
+          <el-tag style="color:red" >{{title}}</el-tag>
+        </div>
+</div>
+
+<script>
+    let showName = true;
+   function toggleName(){
+         showName = !showName;
+         console.log(showName)
+        document.querySelector('.bigemap-pane.bigemap-tooltip-pane').style.display = showName ? 'block' :'none';
+       
+   }
+   setTimeout(()=>{
+     document.querySelector('.bigemap-control-container').remove();
+   })
+
+    var cityObj = {
+        '佛山市':{
+            value:3
+        },
+        '广州市':{
+            value:3,
+            to:{
+                '佛山市':{value:1},	//广州到佛山的迁移特效数据
+                '梅州市':{value:22},	//广州到梅州的迁移特效数据
+                '湛江市':{}	//广州到湛江的迁移特效数据
+            }
+        },
+        '汕头市':{
+            value:3
+        },
+        '湛江市':{
+
+        },
+        '清远市':{
+
+        },
+        '茂名市':{},
+        '梅州市':{value:22},
+    }
+    var cityCenterPos = {};
+
+    BM.Config.HTTP_URL = ''
+      BM = window.BM;
+     // BM.Config.HTTP_URL = "http://www.bigemap.com:9000";
+     // 在ID为map的元素中实例化一个地图，并设置地图的ID号为 bigemap.googlemap-streets，ID号程序自动生成，无需手动配置，并设置地图的投影为百度地图 ，中心点，默认的级别和显示级别控件
+      map = BM.map("map", "bigemap.googlemap-streets", {
+        center: [23.125178,113.280637],	//中心点坐标
+        zoom: 7,	//缩放级别
+        /*minZoom:7,
+        maxZoom:7,*/
+        zoomControl: false,	//开启缩放控制
+        //attributionControl:false,
+        dragging:false,	//是否可拖动
+        doubleClickZoom:false,	//双击缩放控制
+        scrollWheelZoom:false,	//鼠标滚轮缩放控制
+      });
+
+      let curCity,desCityName,desCityObj;
+      var data = jsonData;
+        var all = [
+          "#f7acbc",
+          "#deab8a",
+          "#817936",
+          "#444693",
+          "#ef5b9c",
+          "#fedcbd",
+          "#7f7522",
+          "#2b4490",
+          "#feeeed",
+          "#f47920",
+          "#80752c",
+          "#2a5caa",
+          "#f05b72",
+          "#905a3d",
+          "#87843b",
+          "#224b8f",
+          "#f15b6c",
+          "#8f4b2e",
+          "#726930",
+          "#003a6c",
+          "#f8aba6",
+          "#87481f",
+          "#454926",
+          "#102b6a",
+          "#f69c9f",
+          "#5f3c23",
+          "#2e3a1f",
+          "#426ab3",
+          "#f58f98",
+          "#6b473c",
+          "#4d4f36",
+          "#46485f",
+          "#ca8687",
+          "#faa755",
+          "#b7ba6b",
+          "#4e72b8",
+          "#f391a9",
+          "#fab27b",
+          "#b2d235",
+          "#181d4b",
+          "#bd6758",
+          "#f58220",
+          "#5c7a29",
+          "#1a2933",
+          "#d71345",
+          "#843900",
+          "#bed742",
+          "#121a2a",
+          "#d64f44",
+          "#905d1d",
+          "#7fb80e",
+          "#0c212b",
+          "#d93a49",
+          "#8a5d19",
+          "#a3cf62",
+          "#6a6da9",
+          "#b3424a",
+          "#8c531b",
+          "#769149",
+          "#585eaa",
+          "#c76968",
+          "#826858",
+          "#6d8346",
+          "#494e8f",
+          "#bb505d",
+          "#64492b",
+          "#78a355",
+          "#afb4db",
+          "#987165",
+          "#ae6642",
+          "#abc88b",
+          "#9b95c9",
+          "#ac6767",
+          "#56452d",
+          "#74905d",
+          "#6950a1",
+          "#973c3f",
+          "#96582a",
+          "#cde6c7",
+          "#6f60aa",
+          "#b22c46",
+          "#705628",
+          "#1d953f",
+          "#867892",
+          "#a7324a",
+          "#4a3113",
+          "#77ac98",
+          "#918597",
+          "#aa363d",
+          "#412f1f",
+          "#007d65",
+          "#6f6d85",
+          "#ed1941",
+          "#845538",
+          "#84bf96",
+          "#594c6d",
+          "#f26522",
+          "#8e7437",
+          "#45b97c",
+          "#694d9f",
+          "#d2553d",
+          "#69541b",
+          "#225a1f",
+          "#6f599c",
+          "#b4534b",
+          "#d5c59f",
+          "#367459",
+          "#8552a1",
+          "#ef4136",
+          "#cd9a5b",
+          "#007947",
+          "#543044",
+          "#c63c26",
+          "#cd9a5b",
+          "#40835e",
+          "#63434f",
+          "#f3715c",
+          "#b36d41",
+          "#2b6447",
+          "#7d5886",
+          "#a7573b",
+          "#df9464",
+          "#005831",
+          "#401c44",
+          "#aa2116",
+          "#b76f40",
+          "#006c54",
+          "#472d56",
+          "#b64533",
+          "#ad8b3d",
+          "#375830",
+          "#45224a",
+          "#b54334",
+          "#dea32c",
+          "#274d3d",
+          "#411445",
+          "#853f04",
+          "#d1923f",
+          "#375830",
+          "#4b2f3d",
+          "#840228",
+          "#c88400",
+          "#27342b",
+          "#402e4c",
+          "#7a1723",
+          "#c37e00",
+          "#65c294",
+          "#c77eb5",
+          "#a03939",
+          "#c37e00",
+          "#73b9a2",
+          "#ea66a6",
+          "#8a2e3b",
+          "#e0861a",
+          "#72baa7",
+          "#f173ac",
+          "#8e453f",
+          "#ffce7b",
+          "#005344",
+          "#fffffb",
+          "#8f4b4a",
+          "#fcaf17",
+          "#122e29",
+          "#fffef9",
+          "#892f1b",
+          "#ba8448",
+          "#293047",
+          "#f6f5ec",
+          "#6b2c25",
+          "#896a45",
+          "#00ae9d",
+          "#d9d6c3",
+          "#733a31",
+          "#76624c",
+          "#508a88",
+          "#d1c7b7",
+          "#54211d",
+          "#6d5826",
+          "#70a19f",
+          "#f2eada",
+          "#78331e",
+          "#ffc20e",
+          "#50b7c1",
+          "#d3d7d4",
+          "#53261f",
+          "#fdb933",
+          "#00a6ac",
+          "#999d9c",
+          "#f15a22",
+          "#d3c6a6",
+          "#78cdd1",
+          "#a1a3a6",
+          "#b4533c",
+          "#c7a252",
+          "#008792",
+          "#9d9087",
+          "#84331f",
+          "#dec674",
+          "#94d6da",
+          "#8a8c8e",
+          "#f47a55",
+          "#b69968",
+          "#afdfe4",
+          "#74787c",
+          "#f15a22",
+          "#c1a173",
+          "#5e7c85",
+          "#7c8577",
+          "#f3704b",
+          "#dbce8f",
+          "#76becc",
+          "#72777b",
+          "#da765b",
+          "#ffd400",
+          "#90d7ec",
+          "#77787b",
+          "#c85d44",
+          "#ffd400",
+          "#009ad6",
+          "#4f5555",
+          "#ae5039",
+          "#ffe600",
+          "#145b7d",
+          "#6c4c49",
+          "#6a3427",
+          "#f0dc70",
+          "#11264f",
+          "#563624",
+          "#8f4b38",
+          "#fcf16e",
+          "#7bbfea",
+          "#3e4145",
+          "#8e3e1f",
+          "#decb00",
+          "#33a3dc",
+          "#3c3645",
+          "#f36c21",
+          "#cbc547",
+          "#228fbd",
+          "#464547",
+          "#b4532a",
+          "#6e6b41",
+          "#2468a2",
+          "#130c0e",
+          "#b7704f",
+          "#596032",
+          "#2570a1",
+          "#281f1d",
+          "#de773f",
+          "#525f42",
+          "#2585a6",
+          "#2f271d",
+          "#c99979",
+          "#5f5d46",
+          "#1b315e",
+          "#1d1626",
+        ];
+        BM.geoJSON(data, {
+          style: function () {
+            return {
+              color: "black",
+              fillColor: all[Math.floor(Math.random() * all.length)],	//每个地区的填充颜色
+              weight: 1,
+              fillOpacity: 0.9,	//填充透明度
+            };
+          },
+          onEachFeature: function (feature, layer) {
+            feature.properties &&
+              feature.properties.name &&
+              layer.bindTooltip(feature.properties.name, {
+                direction: "bottom",
+                className: "my_tooltip",
+                permanent: true,	//持久显示地名
+              });
+
+            curCity = feature.properties.name;
+            if(cityCenterPos[curCity]){
+                 cityCenterPos[curCity].position.push(feature.properties.centroid[0],feature.properties.centroid[1]);
+            }else{
+                cityCenterPos[curCity] = {
+                    position:[feature.properties.centroid[0],feature.properties.centroid[1]]
+                };
+            }
+
+              if(cityObj[curCity]){
+                cityObj[curCity].position = [feature.properties.centroid[0],feature.properties.centroid[1]];
+                if(cityObj[curCity].to){
+                    for(let j in cityObj[curCity].to){
+                        desCityObj = cityObj[curCity].to[j];
+
+                        if(!cityCenterPos[j]){
+                            cityCenterPos[j] = {
+                                position:[],
+                            };
+                        }
+                        desCityObj.position = cityCenterPos[j].position
+                    }
+                }
+              }
+          }
+        }).addTo(map);
+
+
+        //特效：发光点
+        var myIcon = BM.divIcon({className: 'my-div-icon', html: '<div><span class="pulse-icon"></span></div>'});
+
+
+        //echart
+        var option = {
+                legend: {
+                    data: ['降雨量', '径流量'],
+                    align: 'left'
+                },
+                toolbox: {
+                    feature: {
+                        magicType: {
+                            type: ['stack', 'tiled']
+                        },
+                        saveAsImage: {
+                            pixelRatio: 2
+                        }
+                    }
+                },
+                tooltip: {},
+                xAxis: {
+                    data: ['周一','周二','周三','周四','周五','周六','周日'],
+                    silent: false,
+                    splitLine: {
+                        show: false
+                    }
+                },
+                yAxis: {},
+                series: [{
+                    name: '降雨量',
+                    type: 'bar',
+                    animationDelay: function (idx) {
+                        return idx * 10;
+                    }
+                }, {
+                    name: '径流量',
+                    type: 'bar',
+                    animationDelay: function (idx) {
+                        return idx * 10 + 100;
+                    }
+                }],
+                animationEasing: 'elasticOut',
+                animationDelayUpdate: function (idx) {
+                    return idx * 5;
+                }
+            };
+        var div = BM.DomUtil.create('div');
+        var chart = echarts.init(div, '', {
+            width: 400,
+            height: 180
+        });
+        chart.setOption(option);
+       
+        for(let i in cityObj){
+                BM.marker([cityObj[i].position[1],cityObj[i].position[0]], {icon: myIcon})
+                    .bindPopup(function () {
+                    var city = i;
+                    var data1 = [];
+                    var data2 = [];
+                    for (var i = 0; i < 7; i++) {
+                        var data = Math.random().toFixed(2);
+                        data1.push(data);
+                        data2.push(data * (Math.random() + 1.5));
+                    }
+                    chart.setOption({
+                        title: {
+                            text: city,
+                            subtext: '测试数据',
+                        },
+                        grid:{
+                            height:80
+                        },
+                        series: [
+                            {
+                                name: 'cpu使用率',
+                                data: data1
+                            },
+                            {
+                                name:'内存使用率',
+                                data: data2
+                            }
+                        ]
+                    });
+
+                  //  chart.getDom().children[0].style.height = '160px';
+                    return chart.getDom();
+                },{maxWidth:600,autoPan:false,keepInView:true,className:'pops-chart',direction:'auto'})
+                .addTo(map);
+        }
+		
+    //迁徙特效部分
+
+    var planePath = 'path://M1705.06,1318.313v-89.254l-319.9-221.799l0.073-208.063c0.521-84.662-26.629-121.796-63.961-121.491c-37.332-0.305-64.482,36.829-63.961,121.491l0.073,208.063l-319.9,221.799v89.254l330.343-157.288l12.238,241.308l-134.449,92.931l0.531,42.034l175.125-42.917l175.125,42.917l0.531-42.034l-134.449-92.931l12.238-241.308L1705.06,1318.313z';
+
+    var convertDatas = function (data) {    //cityObj
+        var res = [],
+            item;
+        for(let i in data){
+            item = data[i];
+           if(item.to){
+                for(let j in item.to){
+                    var fromCoord = i;
+                    var toCoord = j;
+                    res.push({
+                        fromName: fromCoord,
+                        toName: toCoord,
+                        coords: [item.position, item.to[j].position]
+                    });
+                }
+                
+           }
+        }
+         return res;
+    };
+
+
+    var color = ['#a6c84c', '#ffa022', '#46bee9'];
+    var series = [];
+        series.push({   //虚线
+               // name: ' Top10',
+                type: 'lines',
+                coordinateSystem: 'leaflet',
+                zlevel: 1,
+                effect: {
+                    show: true,
+                    period: 2,
+                    trailLength: 0.7,
+                    color: '#fff',
+                    symbolSize: 3
+                },
+                lineStyle: {
+                    normal: {
+                        color: color[2],
+                        width: 1,
+                        curveness: 0.2
+                    }
+                },
+               data: convertDatas(cityObj)
+               // data: convertData(item[1])
+            },
+            {   //小箭头
+               // name:' Top10',
+                type: 'lines',
+                coordinateSystem: 'leaflet',
+                zlevel: 2,
+                symbol: ['none', 'none'],
+                symbolSize: 15,
+                effect: {
+                    show: true,
+                    period: 2,
+                    trailLength: 0,
+                    symbol: planePath,
+                    symbolSize: 5
+                },
+                lineStyle: {
+                    normal: {
+                        color: color[1],
+                        width: 1,
+                        opacity: 0.6,
+                        curveness: 0.2
+                    }
+                },
+                data: convertDatas(cityObj)
+            });
+
+    option = {
+        title: {
+            text: '降雨量模型',
+            subtext: '测试数据',
+            textStyle:{
+                color:'#f1f1f1',
+                fontSize:25
+            },
+            left: 'center'
+        },
+        tooltip: {
+            trigger: 'item'
+        },
+        series: series
+    };
+    BM.supermap.echartsLayer(option).addTo(map);
+
+
+
+</script>
+<style >
+    body{
+        height: 100vh;
+        background-size:100% 100%; 
+        background-image: linear-gradient(gray,blue);
+    }
+    #map {
+      height: 100vh;
+      background-image: linear-gradient(gray,blue);
+      background-image: url('./true.jpg');
+      background-size:100% 100%; 
+      transform-origin: center bottom;
+    }
+    .tittext {
+      position: absolute;
+      top: 10px;
+      left: 50px;
+      z-index: 10;
+    }
+    .my_tooltip{
+        padding:0px;
+        margin-left:6px;
+        margin-top:0px;
+        background-color: transparent;
+        color: white;
+        border: 0;
+    }
+    .bigemap-tooltip-bottom::before{
+      border:0;
+    }
+</style>
+</body>
+</html>                                                                                    
